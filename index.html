@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Escape Game AR - Le Dernier Souffle</title>
+  <title>Escape Game AR - La Pièce Mystère</title>
   
   <style>
     * {
@@ -16,7 +16,7 @@
     body {
       overflow: hidden;
       background-color: #050508;
-      font-family: 'Georgia', serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     #container {
       width: 100vw;
@@ -34,31 +34,29 @@
       transform: translateX(-50%);
       width: 90%;
       max-width: 420px;
-      padding: 16px 22px;
+      padding: 14px 20px;
       background: rgba(18, 14, 12, 0.92);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(180, 110, 50, 0.5);
-      border-radius: 12px;
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      border-radius: 14px;
       color: #e2d1c3;
       text-align: center;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
       z-index: 10;
       pointer-events: none;
     }
     #status-title {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 2px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #d48c46;
+      color: #d4af37;
       margin-bottom: 4px;
-      text-shadow: 0 0 8px rgba(212, 140, 70, 0.4);
     }
     #status-desc {
       font-size: 13px;
-      color: #b8a898;
-      font-style: italic;
+      color: #cbd5e1;
     }
 
     #start-btn {
@@ -66,17 +64,17 @@
       bottom: 36px;
       left: 50%;
       transform: translateX(-50%);
-      padding: 16px 38px;
-      background: linear-gradient(135deg, #8c4a27 0%, #4a2411 100%);
-      border: 1px solid #b86a32;
-      border-radius: 28px;
-      color: #f3e5ab;
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 2px;
+      padding: 16px 36px;
+      background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+      border: none;
+      border-radius: 30px;
+      color: #0d0f14;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1px;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
       z-index: 10;
       pointer-events: auto;
     }
@@ -98,11 +96,11 @@
 <body>
 
   <div id="hud">
-    <div id="status-title">RECHERCHE DE LA STÈLE</div>
-    <div id="status-desc">Pointez votre appareil vers l'image du mystère.</div>
+    <div id="status-title">RECHERCHE EN COURS</div>
+    <div id="status-desc">Pointez la caméra vers l'image cible.</div>
   </div>
 
-  <button id="start-btn">ENTRER DANS L'ÉNIGME</button>
+  <button id="start-btn">DÉMARRER L'EXPÉRIENCE</button>
   <div id="container"></div>
 
   <script type="module">
@@ -113,7 +111,7 @@
     const statusDesc = document.getElementById('status-desc');
     const startBtn = document.getElementById('start-btn');
 
-    // 1. ENGINE MINDAR
+    // 1. INITIALISATION MINDAR
     const mindarThree = new MindARThree({
       container: document.querySelector("#container"),
       imageTargetSrc: "./targets.mind"
@@ -121,339 +119,221 @@
 
     const { renderer, scene, camera } = mindarThree;
 
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
-
-    // 2. ÉCLAIRAGE STYLE "LANTERNE CHAUDE"
-    const ambientLight = new THREE.AmbientLight(0x33221a, 1.5);
+    // 2. ÉCLAIRAGE MULTI-DIRECTIONNEL
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
     scene.add(ambientLight);
 
-    // Lumière principale simulant la lanterne en haut
-    const lanternLight = new THREE.PointLight(0xff9933, 4.5, 10);
-    lanternLight.position.set(0, 2.5, 1.5);
-    scene.add(lanternLight);
+    const topLight = new THREE.DirectionalLight(0xfff5ea, 2.0);
+    topLight.position.set(3, 5, 4);
+    scene.add(topLight);
 
-    // Lumière de débouchage froide (ambiance ruelle sombre)
-    const moonLight = new THREE.DirectionalLight(0x445577, 1.0);
-    moonLight.position.set(-2, -2, 2);
-    scene.add(moonLight);
+    const bottomLight = new THREE.DirectionalLight(0xffeedd, 2.5);
+    bottomLight.position.set(-2, -5, -2);
+    scene.add(bottomLight);
 
-    // 3. AUDIO SPATIAL
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
-
-    function unlockAudio() {
-      if (listener.context.state === 'suspended') {
-        listener.context.resume();
-      }
-    }
-
-    function createClickBuffer(audioCtx) {
-      const sampleRate = audioCtx.sampleRate;
-      const buffer = audioCtx.createBuffer(1, sampleRate * 0.05, sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        const t = i / sampleRate;
-        data[i] = Math.sin(2 * Math.PI * 220 * t) * Math.exp(-t * 90);
-      }
-      return buffer;
-    }
-
-    function createSuccessBuffer(audioCtx) {
-      const sampleRate = audioCtx.sampleRate;
-      const buffer = audioCtx.createBuffer(1, sampleRate * 0.8, sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        const t = i / sampleRate;
-        const freq = 180 + (t / 0.8) * 320;
-        data[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * 3);
-      }
-      return buffer;
-    }
-
-    const positionalClick = new THREE.PositionalAudio(listener);
-    const positionalSuccess = new THREE.PositionalAudio(listener);
-
-    positionalClick.setBuffer(createClickBuffer(listener.context));
-    positionalClick.setRefDistance(0.5);
-
-    positionalSuccess.setBuffer(createSuccessBuffer(listener.context));
-    positionalSuccess.setRefDistance(0.5);
-
-    // 4. DESIGN CADENAS FER ROUILLE & BRONZE VIEILLI
-    const padlockGroup = new THREE.Group();
-    padlockGroup.scale.set(0.75, 0.75, 0.75);
-    // Ajustement de position pour recouvrir le cadenas imprimé
-    padlockGroup.position.set(0, -0.32, 0.02);
-
-    padlockGroup.add(positionalClick);
-    padlockGroup.add(positionalSuccess);
-
-    // Matériau Fer oxyde / Rouille
-    const rustedIronMat = new THREE.MeshStandardMaterial({
-      color: 0x3d271d,
-      metalness: 0.4,
-      roughness: 0.85
-    });
-
-    // Matériau Anse fer forgé sombre
-    const darkShackleMat = new THREE.MeshStandardMaterial({
-      color: 0x22201e,
-      metalness: 0.7,
-      roughness: 0.5
-    });
-
-    // A. Corps de cadenas massif
-    const shape = new THREE.Shape();
-    const w = 0.42, h = 0.34, r = 0.05;
-    shape.moveTo(-w/2 + r, -h/2);
-    shape.lineTo(w/2 - r, -h/2);
-    shape.quadraticCurveTo(w/2, -h/2, w/2, -h/2 + r);
-    shape.lineTo(w/2, h/2 - r);
-    shape.quadraticCurveTo(w/2, h/2, w/2 - r, h/2);
-    shape.lineTo(-w/2 + r, h/2);
-    shape.quadraticCurveTo(-w/2, h/2, -w/2, h/2 - r);
-    shape.lineTo(-w/2, -h/2 + r);
-    shape.quadraticCurveTo(-w/2, -h/2, -w/2 + r, -h/2);
-
-    const bodyGeo = new THREE.ExtrudeGeometry(shape, {
-      depth: 0.12,
-      bevelEnabled: true,
-      bevelThickness: 0.015,
-      bevelSize: 0.015,
-      bevelSegments: 3
-    });
-    bodyGeo.center();
-    const body = new THREE.Mesh(bodyGeo, rustedIronMat);
-    padlockGroup.add(body);
-
-    // B. Cavité intérieure pour les 3 molettes
-    const slotGeo = new THREE.BoxGeometry(0.30, 0.15, 0.05);
-    const slotMat = new THREE.MeshStandardMaterial({ color: 0x110d0a, roughness: 0.9 });
-    const slot = new THREE.Mesh(slotGeo, slotMat);
-    slot.position.set(0, -0.01, 0.045);
-    padlockGroup.add(slot);
-
-    // C. Gemme rougeoyante (Remplace la LED moderne)
-    const runeMat = new THREE.MeshStandardMaterial({
-      color: 0x881100,
-      emissive: 0xbb2200,
-      emissiveIntensity: 1.8,
-      roughness: 0.3
-    });
-    const rune = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.01, 16), runeMat);
-    rune.rotation.x = Math.PI / 2;
-    rune.position.set(0, 0.11, 0.065);
-    padlockGroup.add(rune);
-
-    // D. Anse en fer forgé
-    const shackleGroup = new THREE.Group();
-    shackleGroup.position.set(0, 0.08, 0);
-
-    const arch = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.024, 16, 32, Math.PI), darkShackleMat);
-    arch.position.set(0, 0.12, 0);
-    shackleGroup.add(arch);
-
-    const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.22, 24), darkShackleMat);
-    legL.position.set(-0.11, 0.01, 0);
-    shackleGroup.add(legL);
-
-    const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.22, 24), darkShackleMat);
-    legR.position.set(0.11, 0.01, 0);
-    shackleGroup.add(legR);
-
-    padlockGroup.add(shackleGroup);
-
-    // E. TEXTURE DES 3 MOLETTES (Bronze vieilli avec chiffres gravés)
-    function createBronzeDigitTexture() {
+    // 3. TEXTURE POUR 3 CHIFFRES SOUS LE SOCLE
+    function createBottomNumberTexture(numberStr) {
       const canvas = document.createElement('canvas');
-      canvas.width = 1280;
-      canvas.height = 128;
+      canvas.width = 512;
+      canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Fond bronze patiné
-      ctx.fillStyle = '#2a1e17';
-      ctx.fillRect(0, 0, 1280, 128);
+      // Fond du socle
+      ctx.fillStyle = '#1a1815';
+      ctx.beginPath();
+      ctx.arc(256, 256, 250, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Bordures cuivrées
-      ctx.fillStyle = '#b46a32';
-      ctx.fillRect(0, 0, 1280, 6);
-      ctx.fillRect(0, 122, 1280, 6);
+      // Anneau doré
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 16;
+      ctx.stroke();
 
-      // Chiffres gravés style médiéval / ancien
+      // Adaptation automatique de la taille de police pour 3 chiffres
+      const fontSize = numberStr.length >= 3 ? 135 : 200;
       ctx.fillStyle = '#f3e5ab';
-      ctx.font = 'Bold 72px Georgia, serif';
+      ctx.font = `Bold ${fontSize}px Georgia, serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-
-      for (let i = 0; i < 10; i++) {
-        ctx.save();
-        ctx.translate(i * 128 + 64, 64);
-        ctx.rotate(Math.PI / 2);
-        ctx.fillText(i.toString(), 0, 0);
-        ctx.restore();
-      }
+      ctx.fillText(numberStr, 256, 256);
 
       const texture = new THREE.CanvasTexture(canvas);
-      texture.wrapS = THREE.RepeatWrapping;
       return texture;
     }
 
-    // F. CRÉATION DES 3 MOLETTES
-    const wheels = [];
-    const currentDigits = [0, 0, 0];
-    const targetRotations = [0, 0, 0];
-    
-    // COMBINAISON SECRÈTE (Exemple: 314 - À modifier selon votre énigme)
-    const SECRET_CODE = "314"; 
+    // 4. CRÉATION DE LA PIÈCE D'ÉCHEC 3D (ROI)
+    function createChessPiece(secretNumber) {
+      const pieceGroup = new THREE.Group();
 
-    const digitTexture = createBronzeDigitTexture();
-    const wheelGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.078, 32);
-    wheelGeo.rotateZ(Math.PI / 2);
+      // Profil du Roi
+      const points = [];
+      points.push(new THREE.Vector2(0.35, 0.00));
+      points.push(new THREE.Vector2(0.35, 0.06));
+      points.push(new THREE.Vector2(0.31, 0.10));
+      points.push(new THREE.Vector2(0.26, 0.14));
+      points.push(new THREE.Vector2(0.18, 0.28));
+      points.push(new THREE.Vector2(0.16, 0.42));
+      points.push(new THREE.Vector2(0.21, 0.50));
+      points.push(new THREE.Vector2(0.18, 0.54));
+      points.push(new THREE.Vector2(0.15, 0.64));
+      points.push(new THREE.Vector2(0.22, 0.74));
+      points.push(new THREE.Vector2(0.25, 0.86));
+      points.push(new THREE.Vector2(0.18, 0.87));
+      points.push(new THREE.Vector2(0.00, 0.87));
 
-    for (let i = 0; i < 3; i++) {
-      const wheelMat = new THREE.MeshStandardMaterial({
-        map: digitTexture,
-        metalness: 0.6,
-        roughness: 0.4
+      const latheGeo = new THREE.LatheGeometry(points, 32);
+      const ivoryMat = new THREE.MeshPhongMaterial({
+        color: 0xf4efe6,
+        specular: 0xffffff,
+        shininess: 80
       });
-      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-      
-      // Espacement pour 3 molettes
-      wheel.position.set(-0.09 + i * 0.09, -0.01, 0.042);
-      wheel.userData = { index: i };
-      
-      padlockGroup.add(wheel);
-      wheels.push(wheel);
+      const bodyMesh = new THREE.Mesh(latheGeo, ivoryMat);
+
+      // Croix dorée au sommet du Roi
+      const crossGroup = new THREE.Group();
+      const goldMat = new THREE.MeshPhongMaterial({ color: 0xd4af37, specular: 0xffe090, shininess: 100 });
+      const vBar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), goldMat);
+      vBar.position.y = 0.95;
+      const hBar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.04), goldMat);
+      hBar.position.y = 0.97;
+      crossGroup.add(vBar, hBar);
+
+      // Disque sous le socle avec les 3 chiffres
+      const bottomGeo = new THREE.CircleGeometry(0.34, 32);
+      const numTexture = createBottomNumberTexture(secretNumber);
+      const bottomMat = new THREE.MeshBasicMaterial({ map: numTexture, side: THREE.DoubleSide });
+      const bottomMesh = new THREE.Mesh(bottomGeo, bottomMat);
+      bottomMesh.rotation.x = Math.PI / 2;
+      bottomMesh.position.y = 0.001;
+
+      pieceGroup.add(bodyMesh, crossGroup, bottomMesh);
+
+      // Recentrer le pivot
+      bodyMesh.position.y = -0.45;
+      crossGroup.position.y = -0.45;
+      bottomMesh.position.y = -0.45;
+
+      return pieceGroup;
     }
 
-    // ANCRAGE AR
+    // CODE SECRET À 3 CHIFFRES (Modifiez "314" par les 3 chiffres de votre choix)
+    const SECRET_NUMBER = "314";
+    const chessGroup = createChessPiece(SECRET_NUMBER);
+    chessGroup.scale.set(0.8, 0.8, 0.8);
+
+    // ANCRAGE MINDAR
     const anchor = mindarThree.addAnchor(0);
-    anchor.group.add(padlockGroup);
+    anchor.group.add(chessGroup);
 
     anchor.onTargetFound = () => {
-      statusTitle.textContent = "STÈLE DÉTECTÉE";
-      statusTitle.style.color = "#d48c46";
-      statusDesc.textContent = "Trouvez le code dans 'LE DERNIER SOUFFLE'...";
+      statusTitle.textContent = "PIÈCE DÉTECTÉE";
+      statusTitle.style.color = "#d4af37";
+      statusDesc.textContent = "Pincez pour zoomer. Tournez la pièce pour inspecter le dessous.";
     };
 
     anchor.onTargetLost = () => {
-      statusTitle.textContent = "RECHERCHE DE LA STÈLE";
-      statusTitle.style.color = "#d48c46";
-      statusDesc.textContent = "Pointez votre appareil vers l'image du mystère.";
+      statusTitle.textContent = "RECHERCHE EN COURS";
+      statusTitle.style.color = "#ffaa00";
+      statusDesc.textContent = "Pointez la caméra vers l'image cible.";
     };
 
-    // LOGIQUE DE DÉVERROUILLAGE
-    function rotateWheel(index) {
-      unlockAudio();
-      currentDigits[index] = (currentDigits[index] + 1) % 10;
-      targetRotations[index] = currentDigits[index] * (Math.PI * 2 / 10);
-
-      if (positionalClick.isPlaying) positionalClick.stop();
-      positionalClick.play();
-
-      checkCode();
-    }
-
-    let isUnlocked = false;
-    let targetShackleY = 0.08;
-
-    function checkCode() {
-      if (currentDigits.join('') === SECRET_CODE && !isUnlocked) {
-        isUnlocked = true;
-        targetShackleY = 0.20; // Ouverture de l'anse
-
-        runeMat.color.setHex(0x00ff88);
-        runeMat.emissive.setHex(0x00ff88);
-        runeMat.emissiveIntensity = 4.0;
-
-        statusTitle.textContent = "LE SCEAU EST BRISÉ !";
-        statusTitle.style.color = "#00ff88";
-        statusDesc.textContent = "Vous avez percé le secret de la stèle.";
-
-        if (positionalSuccess.isPlaying) positionalSuccess.stop();
-        positionalSuccess.play();
-      }
-    }
-
-    // GESTION DES GESTES (ROTATION CADENAS + CLIC MOLETTES)
+    // 5. ROTATION 360° ET ZOOM (PINCH / MOLETTE)
+    let currentScale = 0.8;
     let isPointerDown = false;
-    let pointerStartX = 0, pointerStartY = 0;
-    let hasDragged = false;
+    let lastPointerX = 0, lastPointerY = 0;
+    let initialPinchDistance = null;
 
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+    function getTouchDistance(e) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
 
-    window.addEventListener('pointerdown', (e) => {
-      if (e.target.id === 'start-btn') return;
-      unlockAudio();
+    // Zoom molette
+    window.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      currentScale = Math.max(0.3, Math.min(3.0, currentScale * zoomFactor));
+      chessGroup.scale.set(currentScale, currentScale, currentScale);
+    }, { passive: false });
 
-      isPointerDown = true;
-      hasDragged = false;
-      pointerStartX = e.clientX;
-      pointerStartY = e.clientY;
-    });
-
-    window.addEventListener('pointermove', (e) => {
-      if (!isPointerDown) return;
-
-      const dx = e.clientX - pointerStartX;
-      const dy = e.clientY - pointerStartY;
-
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-        hasDragged = true;
-      }
-
-      if (hasDragged) {
-        padlockGroup.rotation.y += dx * 0.008;
-        padlockGroup.rotation.x += dy * 0.008;
-        padlockGroup.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, padlockGroup.rotation.x));
-
-        pointerStartX = e.clientX;
-        pointerStartY = e.clientY;
-      }
-    });
-
-    window.addEventListener('pointerup', (e) => {
+    // Contrôles tactiles mobiles
+    window.addEventListener('touchstart', (e) => {
       if (e.target.id === 'start-btn') return;
 
-      if (!hasDragged && isPointerDown) {
-        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(wheels);
-
-        if (intersects.length > 0) {
-          rotateWheel(intersects[0].object.userData.index);
-        }
+      if (e.touches.length === 1) {
+        isPointerDown = true;
+        lastPointerX = e.touches[0].clientX;
+        lastPointerY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        isPointerDown = false;
+        initialPinchDistance = getTouchDistance(e);
       }
+    }, { passive: false });
 
-      isPointerDown = false;
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && isPointerDown) {
+        const dx = e.touches[0].clientX - lastPointerX;
+        const dy = e.touches[0].clientY - lastPointerY;
+
+        chessGroup.rotation.y += dx * 0.01;
+        chessGroup.rotation.x += dy * 0.01;
+
+        lastPointerX = e.touches[0].clientX;
+        lastPointerY = e.touches[0].clientY;
+      } else if (e.touches.length === 2 && initialPinchDistance) {
+        const newDist = getTouchDistance(e);
+        const factor = newDist / initialPinchDistance;
+        initialPinchDistance = newDist;
+
+        currentScale = Math.max(0.3, Math.min(3.0, currentScale * factor));
+        chessGroup.scale.set(currentScale, currentScale, currentScale);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) initialPinchDistance = null;
+      if (e.touches.length === 0) isPointerDown = false;
     });
+
+    // Rotation à la souris
+    let isMouseDown = false;
+    window.addEventListener('mousedown', (e) => {
+      if (e.target.id === 'start-btn') return;
+      isMouseDown = true;
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      const dx = e.clientX - lastPointerX;
+      const dy = e.clientY - lastPointerY;
+
+      chessGroup.rotation.y += dx * 0.01;
+      chessGroup.rotation.x += dy * 0.01;
+
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => { isMouseDown = false; });
 
     // DÉMARRAGE
     startBtn.addEventListener('click', async () => {
-      unlockAudio();
       startBtn.style.display = 'none';
       statusTitle.textContent = "CHARGEMENT";
-      statusDesc.textContent = "Éveil de la magie ancienne...";
+      statusDesc.textContent = "Initialisation de la pièce 3D...";
 
       try {
         const response = await fetch('./targets.mind');
         if (!response.ok) throw new Error("Fichier 'targets.mind' introuvable.");
 
         await mindarThree.start();
-        statusTitle.textContent = "RECHERCHE DE LA STÈLE";
-        statusDesc.textContent = "Pointez votre appareil vers l'image du mystère.";
+        statusTitle.textContent = "RECHERCHE EN COURS";
+        statusDesc.textContent = "Pointez la caméra vers l'image cible.";
 
         renderer.setAnimationLoop(() => {
-          for (let i = 0; i < 3; i++) {
-            wheels[i].rotation.x += (targetRotations[i] - wheels[i].rotation.x) * 0.2;
-          }
-
-          shackleGroup.position.y += (targetShackleY - shackleGroup.position.y) * 0.1;
-
           renderer.render(scene, camera);
         });
 
