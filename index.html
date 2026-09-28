@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Escape Game AR - La Pièce Mystère</title>
+  <title>Escape Game AR - Le Cavalier Mystère</title>
   
   <style>
     * {
@@ -119,116 +119,184 @@
 
     const { renderer, scene, camera } = mindarThree;
 
-    // 2. ÉCLAIRAGE MULTI-DIRECTIONNEL
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+    // 2. ÉCLAIRAGE DE STUDIO HAUT DE GAMME
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     scene.add(ambientLight);
 
-    const topLight = new THREE.DirectionalLight(0xfff5ea, 2.0);
-    topLight.position.set(3, 5, 4);
-    scene.add(topLight);
+    const keyLight = new THREE.DirectionalLight(0xfff5ea, 2.5);
+    keyLight.position.set(4, 6, 4);
+    scene.add(keyLight);
 
-    const bottomLight = new THREE.DirectionalLight(0xffeedd, 2.5);
-    bottomLight.position.set(-2, -5, -2);
+    const rimLight = new THREE.DirectionalLight(0xd4af37, 2.0); // Lumière rasante dorée
+    rimLight.position.set(-4, 3, -3);
+    scene.add(rimLight);
+
+    const bottomLight = new THREE.DirectionalLight(0xffeedd, 3.0); // Rétro-éclairage du socle
+    bottomLight.position.set(0, -6, 0);
     scene.add(bottomLight);
 
-    // 3. TEXTURE POUR 3 CHIFFRES SOUS LE SOCLE
+    // 3. TEXTURE SOCLE AVEC GRAVURE
     function createBottomNumberTexture(numberStr) {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Fond du socle
-      ctx.fillStyle = '#1a1815';
+      // Fond feutrine sombre
+      ctx.fillStyle = '#11100e';
       ctx.beginPath();
       ctx.arc(256, 256, 250, 0, Math.PI * 2);
       ctx.fill();
 
-      // Anneau doré
+      // Bague en or gravée
       ctx.strokeStyle = '#d4af37';
-      ctx.lineWidth = 16;
+      ctx.lineWidth = 18;
       ctx.stroke();
 
-      // Adaptation automatique de la taille de police pour 3 chiffres
-      const fontSize = numberStr.length >= 3 ? 135 : 200;
+      ctx.strokeStyle = '#8a6d1e';
+      ctx.lineWidth = 4;
+      ctx.arc(256, 256, 232, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Gravure des 3 chiffres
+      const fontSize = numberStr.length >= 3 ? 130 : 190;
       ctx.fillStyle = '#f3e5ab';
       ctx.font = `Bold ${fontSize}px Georgia, serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 10;
       ctx.fillText(numberStr, 256, 256);
 
-      const texture = new THREE.CanvasTexture(canvas);
-      return texture;
+      return new THREE.CanvasTexture(canvas);
     }
 
-    // 4. CRÉATION DE LA PIÈCE D'ÉCHEC 3D (ROI)
-    function createChessPiece(secretNumber) {
-      const pieceGroup = new THREE.Group();
+    // 4. CRÉATION DU CAVALIER PREMIUM (TÊTE DE CHEVAL SCULPTÉE)
+    function createKnightPiece(secretNumber) {
+      const knightGroup = new THREE.Group();
 
-      // Profil du Roi
-      const points = [];
-      points.push(new THREE.Vector2(0.35, 0.00));
-      points.push(new THREE.Vector2(0.35, 0.06));
-      points.push(new THREE.Vector2(0.31, 0.10));
-      points.push(new THREE.Vector2(0.26, 0.14));
-      points.push(new THREE.Vector2(0.18, 0.28));
-      points.push(new THREE.Vector2(0.16, 0.42));
-      points.push(new THREE.Vector2(0.21, 0.50));
-      points.push(new THREE.Vector2(0.18, 0.54));
-      points.push(new THREE.Vector2(0.15, 0.64));
-      points.push(new THREE.Vector2(0.22, 0.74));
-      points.push(new THREE.Vector2(0.25, 0.86));
-      points.push(new THREE.Vector2(0.18, 0.87));
-      points.push(new THREE.Vector2(0.00, 0.87));
-
-      const latheGeo = new THREE.LatheGeometry(points, 32);
-      const ivoryMat = new THREE.MeshPhongMaterial({
-        color: 0xf4efe6,
-        specular: 0xffffff,
-        shininess: 80
+      // MATÉRIAUX LUXE
+      // Ébène poli / Noir Onyx
+      const ebonyMat = new THREE.MeshPhongMaterial({
+        color: 0x18181c,
+        specular: 0xaaaaaa,
+        shininess: 90
       });
-      const bodyMesh = new THREE.Mesh(latheGeo, ivoryMat);
 
-      // Croix dorée au sommet du Roi
-      const crossGroup = new THREE.Group();
-      const goldMat = new THREE.MeshPhongMaterial({ color: 0xd4af37, specular: 0xffe090, shininess: 100 });
-      const vBar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), goldMat);
-      vBar.position.y = 0.95;
-      const hBar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.04), goldMat);
-      hBar.position.y = 0.97;
-      crossGroup.add(vBar, hBar);
+      // Or fin 24 Karats
+      const goldMat = new THREE.MeshPhongMaterial({
+        color: 0xd4af37,
+        specular: 0xfff0aa,
+        shininess: 100
+      });
 
-      // Disque sous le socle avec les 3 chiffres
-      const bottomGeo = new THREE.CircleGeometry(0.34, 32);
+      // A. SOCLE TOURNÉ
+      const basePoints = [];
+      basePoints.push(new THREE.Vector2(0.36, 0.00));
+      basePoints.push(new THREE.Vector2(0.36, 0.05));
+      basePoints.push(new THREE.Vector2(0.32, 0.08));
+      basePoints.push(new THREE.Vector2(0.28, 0.12));
+      basePoints.push(new THREE.Vector2(0.22, 0.22));
+      basePoints.push(new THREE.Vector2(0.24, 0.25));
+      basePoints.push(new THREE.Vector2(0.19, 0.28));
+
+      const baseGeo = new THREE.LatheGeometry(basePoints, 36);
+      const baseMesh = new THREE.Mesh(baseGeo, ebonyMat);
+      knightGroup.add(baseMesh);
+
+      // Anneau en or sur le socle
+      const ringGeo = new THREE.TorusGeometry(0.23, 0.015, 16, 36);
+      const ringMesh = new THREE.Mesh(ringGeo, goldMat);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.position.y = 0.235;
+      knightGroup.add(ringMesh);
+
+      // B. PROFIL TÊTE DE CHEVAL (SCULPTURE 3D EXTRUDÉE)
+      const shape = new THREE.Shape();
+      shape.moveTo(0.10, 0.26);
+      
+      // Dos du cou & crinière
+      shape.bezierCurveTo(0.20, 0.38, 0.24, 0.52, 0.20, 0.68);
+      shape.lineTo(0.23, 0.70); // Cran de crinière 1
+      shape.lineTo(0.17, 0.74);
+      shape.lineTo(0.20, 0.78); // Cran de crinière 2
+      shape.lineTo(0.12, 0.82);
+
+      // Oreilles
+      shape.lineTo(0.10, 0.94); // Tip oreille arrière
+      shape.lineTo(0.04, 0.86);
+      shape.lineTo(0.02, 0.92); // Tip oreille avant
+      shape.lineTo(-0.03, 0.83); // Sommet tête
+
+      // Museau & Chanfrein
+      shape.bezierCurveTo(-0.12, 0.78, -0.23, 0.66, -0.25, 0.52);
+      shape.bezierCurveTo(-0.25, 0.44, -0.18, 0.41, -0.11, 0.44); // Bout du nez
+
+      // Jawline / Mâchoire
+      shape.lineTo(-0.06, 0.40); // Narine / bouche
+      shape.bezierCurveTo(-0.12, 0.30, -0.02, 0.22, 0.05, 0.26); // Mâchoire & gorge
+      shape.lineTo(0.10, 0.26);
+
+      const extrudeSettings = {
+        depth: 0.14,
+        bevelEnabled: true,
+        bevelSegments: 5,
+        steps: 1,
+        bevelSize: 0.025,
+        bevelThickness: 0.025
+      };
+
+      const headGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      headGeo.center(); // Centrage géométrique
+      
+      const headMesh = new THREE.Mesh(headGeo, ebonyMat);
+      headMesh.position.set(-0.02, 0.58, 0); // Positionnement sur le socle
+      knightGroup.add(headMesh);
+
+      // C. DÉTAILS EN OR (YEUX & MORS)
+      // Yeux incrustés en or
+      const eyeGeo = new THREE.SphereGeometry(0.018, 16, 16);
+      const leftEye = new THREE.Mesh(eyeGeo, goldMat);
+      leftEye.position.set(-0.08, 0.69, 0.085);
+      const rightEye = new THREE.Mesh(eyeGeo, goldMat);
+      rightEye.position.set(-0.08, 0.69, -0.085);
+      knightGroup.add(leftEye, rightEye);
+
+      // Mors doré
+      const bitGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.20, 16);
+      const bitMesh = new THREE.Mesh(bitGeo, goldMat);
+      bitMesh.rotation.x = Math.PI / 2;
+      bitMesh.position.set(-0.13, 0.46, 0);
+      knightGroup.add(bitMesh);
+
+      // D. DISQUE DU DESSOUS AVEC LES 3 CHIFFRES
+      const bottomGeo = new THREE.CircleGeometry(0.35, 36);
       const numTexture = createBottomNumberTexture(secretNumber);
       const bottomMat = new THREE.MeshBasicMaterial({ map: numTexture, side: THREE.DoubleSide });
       const bottomMesh = new THREE.Mesh(bottomGeo, bottomMat);
       bottomMesh.rotation.x = Math.PI / 2;
       bottomMesh.position.y = 0.001;
+      knightGroup.add(bottomMesh);
 
-      pieceGroup.add(bodyMesh, crossGroup, bottomMesh);
+      // Centrer le pivot général au milieu de la pièce pour des rotations parfaites
+      knightGroup.position.y = -0.35;
 
-      // Recentrer le pivot
-      bodyMesh.position.y = -0.45;
-      crossGroup.position.y = -0.45;
-      bottomMesh.position.y = -0.45;
-
-      return pieceGroup;
+      return knightGroup;
     }
 
-    // CODE SECRET À 3 CHIFFRES (Modifiez "314" par les 3 chiffres de votre choix)
+    // CODE SECRET À 3 CHIFFRES
     const SECRET_NUMBER = "314";
-    const chessGroup = createChessPiece(SECRET_NUMBER);
-    chessGroup.scale.set(0.8, 0.8, 0.8);
+    const knightGroup = createKnightPiece(SECRET_NUMBER);
+    knightGroup.scale.set(0.85, 0.85, 0.85);
 
     // ANCRAGE MINDAR
     const anchor = mindarThree.addAnchor(0);
-    anchor.group.add(chessGroup);
+    anchor.group.add(knightGroup);
 
     anchor.onTargetFound = () => {
-      statusTitle.textContent = "PIÈCE DÉTECTÉE";
+      statusTitle.textContent = "CAVALIER DÉTECTÉ";
       statusTitle.style.color = "#d4af37";
-      statusDesc.textContent = "Pincez pour zoomer. Tournez la pièce pour inspecter le dessous.";
+      statusDesc.textContent = "Pincez pour zoomer. Tournez le cavalier pour voir en dessous.";
     };
 
     anchor.onTargetLost = () => {
@@ -237,8 +305,8 @@
       statusDesc.textContent = "Pointez la caméra vers l'image cible.";
     };
 
-    // 5. ROTATION 360° ET ZOOM (PINCH / MOLETTE)
-    let currentScale = 0.8;
+    // 5. NATIVITÉ TACTILE : ROTATION 360° ET ZOOM (PINCH / MOLETTE)
+    let currentScale = 0.85;
     let isPointerDown = false;
     let lastPointerX = 0, lastPointerY = 0;
     let initialPinchDistance = null;
@@ -249,15 +317,15 @@
       return Math.hypot(dx, dy);
     }
 
-    // Zoom molette
+    // Zoom à la molette
     window.addEventListener('wheel', (e) => {
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      currentScale = Math.max(0.3, Math.min(3.0, currentScale * zoomFactor));
-      chessGroup.scale.set(currentScale, currentScale, currentScale);
+      currentScale = Math.max(0.3, Math.min(3.5, currentScale * zoomFactor));
+      knightGroup.scale.set(currentScale, currentScale, currentScale);
     }, { passive: false });
 
-    // Contrôles tactiles mobiles
+    // Contrôles tactiles (1 doigt = rotation 360°, 2 doigts = zoom)
     window.addEventListener('touchstart', (e) => {
       if (e.target.id === 'start-btn') return;
 
@@ -276,8 +344,9 @@
         const dx = e.touches[0].clientX - lastPointerX;
         const dy = e.touches[0].clientY - lastPointerY;
 
-        chessGroup.rotation.y += dx * 0.01;
-        chessGroup.rotation.x += dy * 0.01;
+        // Rotation fluide sans restriction
+        knightGroup.rotation.y += dx * 0.01;
+        knightGroup.rotation.x += dy * 0.01;
 
         lastPointerX = e.touches[0].clientX;
         lastPointerY = e.touches[0].clientY;
@@ -286,8 +355,8 @@
         const factor = newDist / initialPinchDistance;
         initialPinchDistance = newDist;
 
-        currentScale = Math.max(0.3, Math.min(3.0, currentScale * factor));
-        chessGroup.scale.set(currentScale, currentScale, currentScale);
+        currentScale = Math.max(0.3, Math.min(3.5, currentScale * factor));
+        knightGroup.scale.set(currentScale, currentScale, currentScale);
       }
     }, { passive: false });
 
@@ -296,7 +365,7 @@
       if (e.touches.length === 0) isPointerDown = false;
     });
 
-    // Rotation à la souris
+    // Contrôle à la souris pour PC
     let isMouseDown = false;
     window.addEventListener('mousedown', (e) => {
       if (e.target.id === 'start-btn') return;
@@ -310,8 +379,8 @@
       const dx = e.clientX - lastPointerX;
       const dy = e.clientY - lastPointerY;
 
-      chessGroup.rotation.y += dx * 0.01;
-      chessGroup.rotation.x += dy * 0.01;
+      knightGroup.rotation.y += dx * 0.01;
+      knightGroup.rotation.x += dy * 0.01;
 
       lastPointerX = e.clientX;
       lastPointerY = e.clientY;
@@ -323,7 +392,7 @@
     startBtn.addEventListener('click', async () => {
       startBtn.style.display = 'none';
       statusTitle.textContent = "CHARGEMENT";
-      statusDesc.textContent = "Initialisation de la pièce 3D...";
+      statusDesc.textContent = "Initialisation du Cavalier 3D...";
 
       try {
         const response = await fetch('./targets.mind');
